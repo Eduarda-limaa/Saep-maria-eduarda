@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import estilo from './Login.module.css';
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -17,7 +18,7 @@ export default function Login() {
         {
           headers: {
             "Content-Type": "application/json",
-          }
+          },
         }
       );
 
@@ -31,7 +32,6 @@ export default function Login() {
 
       // Redireciona para a home
       navigate("/Inicial");
-
     } catch (err) {
       console.log("ERRO NO LOGIN:", err);
       alert("Usuário ou senha incorretos");
@@ -39,24 +39,30 @@ export default function Login() {
   }
 
   return (
-    <form onSubmit={fazerLogin}>
-      <h1>Login</h1>
+    <div className={estilo.loginContainer}>
+      <form className={estilo.loginBox} onSubmit={fazerLogin}>
+        <h1>Login</h1>
 
-      <input
-        type="text"
-        placeholder="Usuário"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
+        <input
+          type="text"
+          className={estilo.loginInput}
+          placeholder="Usuário"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-      <input
-        type="password"
-        placeholder="Senha"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <input
+          type="password"
+          className={estilo.loginInput}
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-      <button type="submit">Entrar</button>
-    </form>
+        <button className={estilo.loginBtn} type="submit">
+          Entrar
+        </button>
+      </form>
+    </div>
   );
 }

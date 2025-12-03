@@ -1,17 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import CampoBusca from "../Componentes/CampoBusca";
 import ProdutoForm from "../Componentes/ProdutoForm";
 import ProdutoTabela from "../Componentes/ProdutoTabela";
+import ModalEspecificacao from "../Componentes/ModalEspecificacao";
 
+import estilo from "./Cadastro.module.css";
 
 export default function CadastroProduto() {
   const navigate = useNavigate();
-
   const [produtos, setProdutos] = useState([]);
   const [busca, setBusca] = useState("");
   const [erro, setErro] = useState("");
+
+  const [modalProduto, setModalProduto] = useState(false);
+  const [modalEspecificacao, setModalEspecificacao] = useState(false);
+
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
 
   const [form, setForm] = useState({
     nome: "",
@@ -33,58 +39,30 @@ export default function CadastroProduto() {
     setProdutos(resp.data);
   }
 
-  useEffect(() => {
+  useEffect(() => { carregarProdutos(); }, []);
+
+  async function salvarProduto(e) {
+    e.preventDefault();
+
+    const url = editId
+      ? `http://127.0.0.1:8000/produto/${editId}/`
+      : "http://127.0.0.1:8000/produto/";
+
+    const metodo = editId ? "put" : "post";
+
+    await axios[metodo](url, form, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
     carregarProdutos();
-  }, []);
-
-  async function buscar() {
-    setErro("");
-
-    if (busca.trim() === "") {
-      setErro("Digite algo para buscar.");
-      return;
-    }
-
-    try {
-      const resp = await axios.get(
-        `http://127.0.0.1:8000/produto/?search=${busca}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setProdutos(resp.data);
-    } catch {
-      setErro("Erro ao buscar produtos.");
-    }
+    setModalProduto(false);
   }
 
-  async function salvar(e) {
-    e.preventDefault();
-    setErro("");
-
-    if (!form.nome || !form.tipo || !form.preco || !form.quantidade || !form.estoque_minimo) {
-      setErro("Preencha todos os campos obrigatórios.");
-      return;
-    }
-
-    if (isNaN(Number(form.preco))) {
-      setErro("O preço deve ser um número.");
-      return;
-    }
-
-    try {
-      if (editId) {
-        await axios.put(
-          `http://127.0.0.1:8000/produto/${editId}/`,
-          form,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else {
-        await axios.post("http://127.0.0.1:8000/produto/", form, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
-
-      carregarProdutos();
-      setEditId(null);
+  function abrirModalProduto(produto = null) {
+    if (produto) {
+      setForm(produto);
+      setEditId(produto.id);
+    } else {
       setForm({
         nome: "",
         tipo: "",
@@ -93,14 +71,18 @@ export default function CadastroProduto() {
         preco: "",
         estoque_minimo: "",
       });
-
-    } catch {
-      setErro("Erro ao salvar produto.");
+      setEditId(null);
     }
+    setModalProduto(true);
+  }
+
+  function abrirEspecificacao(produto) {
+    setProdutoSelecionado(produto);
+    setModalEspecificacao(true);
   }
 
   async function excluir(id) {
-    if (!confirm("Confirmar exclusão?")) return;
+    if (!confirm("Excluir produto?")) return;
 
     await axios.delete(`http://127.0.0.1:8000/produto/${id}/`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -109,36 +91,64 @@ export default function CadastroProduto() {
     carregarProdutos();
   }
 
+  async function buscar() {
+    const resp = await axios.get(`http://127.0.0.1:8000/produto/?search=${busca}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    setProdutos(resp.data);
+  }
+
   return (
-    <div className="cadastro-container">
-      <h1>Cadastro de Produtos</h1>
+  <div className={estilo.cadastroContainer}>
+    <h1 className={estilo.cadastroTitulo}>Cadastro de Produtos</h1>
 
-      {erro && <p className="erro">{erro}</p>}
+    <CampoBusca value={busca} onChange={setBusca} onSearch={buscar} />
 
-      <CampoBusca value={busca} onChange={setBusca} onSearch={buscar} />
-
-      <ProdutoForm
-        form={form}
-        setForm={setForm}
-        onSubmit={salvar}
-        editId={editId}
-      />
+    <div className={estilo.tabelaWrapper}>
+      <div className={estilo.tabelaTopo}>
+        <h2>Produtos</h2>
+        <button
+          className={estilo.addBtn}
+          onClick={() => {
+            setForm({});        // limpa formulário
+            setEditId(null);    // modo de edição desativado
+            setModalProduto(true); // abre modal
+          }}
+        >
+          +
+        </button>
+      </div>
 
       <ProdutoTabela
         produtos={produtos}
-        onEdit={(produto) => {
-          setEditId(produto.id);
-          setForm(produto);
-        }}
+        onEdit={abrirModalProduto}
         onDelete={excluir}
+        onEspecificacao={abrirEspecificacao}
       />
-
-      <button onClick={() => navigate("/Inicial")} className="voltar-btn">
-        Voltar
-      </button>
     </div>
-  );
+
+    <button onClick={() => navigate("/Inicial")} className={estilo.voltarBtn}>
+      Voltar
+    </button>
+
+    <ProdutoForm
+      open={modalProduto}
+      onClose={() => setModalProduto(false)}
+      form={form}
+      setForm={setForm}
+      onSubmit={salvarProduto}
+      editId={editId}
+    />
+
+    <ModalEspecificacao
+      open={modalEspecificacao}
+      onClose={(refresh) => {
+        setModalEspecificacao(false);
+        if (refresh) carregarProdutos();
+      }}
+      produto={produtoSelecionado}
+    />
+  </div>
+);
 }
-
-
-

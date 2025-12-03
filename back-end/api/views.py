@@ -23,7 +23,6 @@ class ListCreateProduto(ListCreateAPIView):
 
     def get_queryset(self):
         qs = Produto.objects.filter(is_active=True)
-        # filtros customizados por query params: quantidade_min, quantidade_max, critical
         quantidade_min = self.request.query_params.get('quantidade_min')
         quantidade_max = self.request.query_params.get('quantidade_max')
         critical = self.request.query_params.get('critical')
@@ -41,7 +40,6 @@ class ListCreateProduto(ListCreateAPIView):
                 pass
 
         if critical is not None:
-            # se critical=true retorna apenas produtos com quantidade < estoque_minimo
             if critical.lower() in ['1', 'true', 'yes']:
                 qs = qs.filter(quantidade__lt=models.F('estoque_minimo'))
 
@@ -54,7 +52,6 @@ class RetrieveUpdateDestroyProduto(RetrieveUpdateDestroyAPIView):
     queryset = Produto.objects.filter(is_active=True)
 
     def destroy(self, request, *args, **kwargs):
-        # Exclusão lógica
         instance = self.get_object()
         instance.is_active = False
         instance.save()
@@ -86,7 +83,6 @@ class MovimentacaoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Movimentacao.objects.all().order_by('-data_operacao')
-        # filtros por query params: produto, responsavel, date_from, date_to
         produto = self.request.query_params.get('produto')
         responsavel = self.request.query_params.get('responsavel')
         date_from = self.request.query_params.get('date_from')

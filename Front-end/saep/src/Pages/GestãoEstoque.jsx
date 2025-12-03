@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import estilo from './Gestao.module.css';
 
 export default function GestaoEstoque() {
+  const navigate = useNavigate(); 
+
   const [produtos, setProdutos] = useState([]);
   const [produtoId, setProdutoId] = useState("");
   const [tipo, setTipo] = useState("entrada");
@@ -9,23 +13,17 @@ export default function GestaoEstoque() {
   const [mensagem, setMensagem] = useState("");
   const [historico, setHistorico] = useState([]);
 
-  // Função auxiliar para pegar token
   function getToken() {
     return localStorage.getItem("token");
   }
 
-  // Carregar produtos em ordem alfabética
   async function carregarProdutos() {
     try {
       const token = getToken();
       const resp = await axios.get("http://127.0.0.1:8000/produto/", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      const ordenados = resp.data.sort((a, b) =>
-        a.nome.localeCompare(b.nome)
-      );
-
+      const ordenados = resp.data.sort((a, b) => a.nome.localeCompare(b.nome));
       setProdutos(ordenados);
     } catch (err) {
       console.error("Erro ao carregar produtos:", err);
@@ -33,20 +31,17 @@ export default function GestaoEstoque() {
     }
   }
 
-  // Listar histórico do produto
   async function carregarHistorico(id) {
     if (!id) {
       setHistorico([]);
       return;
     }
-
     try {
       const token = getToken();
       const resp = await axios.get(
         `http://127.0.0.1:8000/movimentacao/?produto=${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setHistorico(resp.data);
     } catch (err) {
       console.error("Erro ao carregar histórico:", err);
@@ -54,26 +49,22 @@ export default function GestaoEstoque() {
     }
   }
 
-  // Registrar Entrada/Saída
   async function registrarMovimentacao() {
     if (!produtoId || quantidade <= 0) {
       setMensagem("Preencha todos os campos!");
       return;
     }
-
-    const produtoSelecionado = produtos.find(p => p.id == produtoId);
-
+    const produtoSelecionado = produtos.find((p) => p.id == produtoId);
     let novoEstoque =
       tipo === "entrada"
         ? produtoSelecionado.quantidade + Number(quantidade)
         : produtoSelecionado.quantidade - Number(quantidade);
 
-    // Verificação automática
     if (tipo === "saida" && novoEstoque < produtoSelecionado.estoque_minimo) {
       alert(
-        `⚠️ Atenção: Estoque do produto ${produtoSelecionado.nome} está abaixo do mínimo!\n` +
-        `Estoque Atual após saída: ${novoEstoque}\n` +
-        `Estoque Mínimo: ${produtoSelecionado.estoque_minimo}`
+        `Atenção: Estoque do produto ${produtoSelecionado.nome} está abaixo do mínimo!\n` +
+          `Estoque Atual após saída: ${novoEstoque}\n` +
+          `Estoque Mínimo: ${produtoSelecionado.estoque_minimo}`
       );
     }
 
@@ -84,9 +75,7 @@ export default function GestaoEstoque() {
         {
           produto: produtoId,
           tipo: tipo === "entrada" ? "ENTRADA" : "SAIDA",
-          quantidade: Number(quantidade)
-          // não enviar data_operacao, o backend gera sozinho
-          // responsavel deve ser preenchido pelo backend com request.user
+          quantidade: Number(quantidade),
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -104,18 +93,25 @@ export default function GestaoEstoque() {
     carregarProdutos();
   }, []);
 
-  // Atualiza histórico ao trocar o produto
   useEffect(() => {
     carregarHistorico(produtoId);
   }, [produtoId]);
 
   return (
-    <div className="container-mov">
-      <h2>Gestão de Estoque</h2>
+    <div className={estilo.containerMov}>
+      {/* ===== Botão Voltar ===== */}
+      <button
+        className={estilo.voltarBtn}
+        onClick={() => navigate("/Inicial")}
+      >
+        ← Voltar para Home
+      </button>
 
-      {/* Combobox produtos */}
-      <label>Selecione o produto:</label>
+      <h2 className={estilo.titulo}>Gestão de Estoque</h2>
+
+      <label className={estilo.label}>Selecione o produto:</label>
       <select
+        className={estilo.select}
         value={produtoId}
         onChange={(e) => setProdutoId(e.target.value)}
       >
@@ -127,36 +123,37 @@ export default function GestaoEstoque() {
         ))}
       </select>
 
-      {/* Tipo */}
-      <label>Tipo de movimentação:</label>
-      <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+      <label className={estilo.label}>Tipo de movimentação:</label>
+      <select
+        className={estilo.select}
+        value={tipo}
+        onChange={(e) => setTipo(e.target.value)}
+      >
         <option value="entrada">Entrada</option>
         <option value="saida">Saída</option>
       </select>
 
-      {/* Quantidade */}
-      <label>Quantidade:</label>
+      <label className={estilo.label}>Quantidade:</label>
       <input
+        className={estilo.input}
         type="number"
         min="1"
         value={quantidade}
         onChange={(e) => setQuantidade(e.target.value)}
       />
 
-      {/* Registrar */}
-      <button onClick={registrarMovimentacao} className="btn-mov">
+      <button onClick={registrarMovimentacao} className={estilo.btnMov}>
         Registrar
       </button>
 
-      {mensagem && <p className="msg">{mensagem}</p>}
+      {mensagem && <p className={estilo.msg}>{mensagem}</p>}
 
-      {/* Histórico */}
-      <h3>Histórico de Movimentações</h3>
+      <h3 className={estilo.subtitulo}>Histórico de Movimentações</h3>
 
       {historico.length === 0 ? (
-        <p>Nenhuma movimentação encontrada.</p>
+        <p className={estilo.semMov}>Nenhuma movimentação encontrada! Selecione um produto.</p>
       ) : (
-        <table className="tabela-historico">
+        <table className={estilo.tabelaHistorico}>
           <thead>
             <tr>
               <th>Data</th>

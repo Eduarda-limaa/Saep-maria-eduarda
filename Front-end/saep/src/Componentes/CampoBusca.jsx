@@ -1,6 +1,8 @@
+import estilo from './Busca.module.css';
+
 export default function CampoBusca({ value, onChange, onSearch }) {
   return (
-    <div className="busca-container">
+    <div className={estilo.buscaContainer}>
       <input
         type="text"
         value={value}
